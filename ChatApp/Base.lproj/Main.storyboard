@@ -9,7 +9,7 @@
         <!--LoginVC-->
         <scene sceneID="w9n-Tj-w4g">
             <objects>
-                <viewController id="bLR-8w-bt8" customClass="LoginVC" customModule="ChatApp" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="Login" id="bLR-8w-bt8" customClass="LoginVC" customModule="ChatApp" customModuleProvider="target" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="zeM-se-zbR"/>
                         <viewControllerLayoutGuide type="bottom" id="wne-mU-dzv"/>
@@ -27,8 +27,7 @@
                             </imageView>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ym6-e2-Cxi">
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="52" id="23E-ok-zxR"/>
-                                    <constraint firstAttribute="width" constant="53" id="dgZ-8i-we1"/>
+                                    <constraint firstAttribute="width" constant="53" id="r54-Oq-oWv"/>
                                 </constraints>
                                 <state key="normal" image="googleButton">
                                     <color key="titleColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
@@ -53,26 +52,27 @@
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
+                            <constraint firstItem="ym6-e2-Cxi" firstAttribute="centerX" secondItem="lh5-bW-b19" secondAttribute="centerX" id="0AH-uE-BuE"/>
                             <constraint firstItem="wne-mU-dzv" firstAttribute="top" secondItem="pD8-1U-sdd" secondAttribute="bottom" id="0a8-Sa-nx8"/>
-                            <constraint firstItem="lh5-bW-b19" firstAttribute="top" secondItem="hxc-iV-0we" secondAttribute="bottom" constant="8" id="1Oc-rz-wT5"/>
-                            <constraint firstItem="wne-mU-dzv" firstAttribute="top" secondItem="ym6-e2-Cxi" secondAttribute="bottom" constant="263" id="Edp-Sz-Jc2"/>
+                            <constraint firstItem="lh5-bW-b19" firstAttribute="top" secondItem="hxc-iV-0we" secondAttribute="bottom" constant="-3" id="1Oc-rz-wT5"/>
+                            <constraint firstItem="ym6-e2-Cxi" firstAttribute="top" secondItem="hxc-iV-0we" secondAttribute="bottom" constant="48" id="IwP-uS-uh9"/>
                             <constraint firstItem="hxc-iV-0we" firstAttribute="centerX" secondItem="hGL-wk-Pv7" secondAttribute="centerX" id="Q9K-Sd-bV1"/>
-                            <constraint firstItem="hxc-iV-0we" firstAttribute="top" secondItem="zeM-se-zbR" secondAttribute="bottom" constant="244" id="RJx-Aa-kNN"/>
-                            <constraint firstItem="ym6-e2-Cxi" firstAttribute="centerX" secondItem="hGL-wk-Pv7" secondAttribute="centerX" id="XnK-Rw-VtW"/>
+                            <constraint firstItem="hxc-iV-0we" firstAttribute="top" secondItem="zeM-se-zbR" secondAttribute="bottom" constant="255" id="RJx-Aa-kNN"/>
                             <constraint firstItem="lh5-bW-b19" firstAttribute="centerX" secondItem="hGL-wk-Pv7" secondAttribute="centerX" id="Y2H-OM-zQJ"/>
-                            <constraint firstItem="ym6-e2-Cxi" firstAttribute="top" secondItem="lh5-bW-b19" secondAttribute="bottom" constant="-3" id="cCE-XX-jFq"/>
                             <constraint firstItem="pD8-1U-sdd" firstAttribute="leading" secondItem="hGL-wk-Pv7" secondAttribute="leading" id="dg5-0v-Kca"/>
+                            <constraint firstItem="ym6-e2-Cxi" firstAttribute="centerY" secondItem="lh5-bW-b19" secondAttribute="centerY" constant="55.5" id="g5U-bL-tl1"/>
                             <constraint firstItem="pD8-1U-sdd" firstAttribute="top" secondItem="hGL-wk-Pv7" secondAttribute="top" id="oru-Yc-rAP"/>
                             <constraint firstAttribute="trailing" secondItem="pD8-1U-sdd" secondAttribute="trailing" id="vhc-wF-SA9"/>
                         </constraints>
                     </view>
+                    <navigationItem key="navigationItem" id="sxL-iL-mqm"/>
                     <connections>
                         <outlet property="anonymousButton" destination="hxc-iV-0we" id="KrW-BY-3BC"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Kul-Nt-dQ2" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-525" y="67.605633802816897"/>
+            <point key="canvasLocation" x="413.60000000000002" y="67.016491754122939"/>
         </scene>
         <!--ChatVC-->
         <scene sceneID="NSr-gd-vEf">
@@ -87,10 +87,37 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                     </view>
+                    <navigationItem key="navigationItem" id="7h8-rT-ZXe">
+                        <barButtonItem key="leftBarButtonItem" title="Logout" id="Aid-j9-jbt">
+                            <color key="tintColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                            <connections>
+                                <action selector="logoutDidTapped:" destination="na7-dV-MZg" id="hi9-FF-ynz"/>
+                            </connections>
+                        </barButtonItem>
+                    </navigationItem>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="KoZ-EO-qqd" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="254" y="64"/>
+            <point key="canvasLocation" x="1974" y="63"/>
+        </scene>
+        <!--Navigation Controller-->
+        <scene sceneID="bfS-70-k7E">
+            <objects>
+                <navigationController storyboardIdentifier="NavigationVC" automaticallyAdjustsScrollViewInsets="NO" id="WBF-Tl-CTX" sceneMemberID="viewController">
+                    <toolbarItems/>
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" misplaced="YES" id="MXc-8o-iRF">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="44"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <color key="barTintColor" red="0.14901960784313725" green="0.26666666666666666" blue="0.40000000000000002" alpha="1" colorSpace="calibratedRGB"/>
+                    </navigationBar>
+                    <nil name="viewControllers"/>
+                    <connections>
+                        <segue destination="na7-dV-MZg" kind="relationship" relationship="rootViewController" id="n5S-8t-Fbs"/>
+                    </connections>
+                </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="hzD-PU-8pq" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="1192.8" y="63.418290854572717"/>
         </scene>
     </scenes>
     <resources>

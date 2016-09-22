@@ -21,6 +21,19 @@ class ChatVC: UIViewController {
         // Dispose of any resources that can be recreated.
     }
     
+    @IBAction func logoutDidTapped(_ sender: UIBarButtonItem) {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        
+        //From main storyboard instantiate a view controller
+        let loginVC = storyboard.instantiateViewController(withIdentifier: "Login") as! LoginVC
+        
+        //Get the app delegate - we need it to get the root controller
+        let appDelegate = UIApplication.shared.delegate as! AppDelegate
+        
+        // Set the LogIn Controller as root view controller
+        appDelegate.window?.rootViewController = loginVC
+        self.dismiss(animated: true, completion: nil)
+    }
 
     /*
     // MARK: - Navigation
