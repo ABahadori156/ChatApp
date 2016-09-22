@@ -10,43 +10,95 @@ import UIKit
 import JSQMessagesViewController
 import MobileCoreServices
 import AVKit
+import FirebaseDatabase
 
 class ChatVC: JSQMessagesViewController {
     
     //An Array that contains all the messages in the chat group
     var messages = [JSQMessage]()
 
+    //Storage in Firebase for all our messages - In this child location, we'll store all messages sent by all users in the app
+    let messageRef = FIRDatabase.database().reference().child("messages")
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
         self.senderId = "1"
         self.senderDisplayName = "xsagakenx"
-        // Do any additional setup after loading the view.
+        
+   
+        //UPLOAD DATA TO FIREBASE DATABASE
+        // messageRef.childByAutoId().setValue("First message")
+        // messageRef.childByAutoId().setValue("Second message")
+        
+
+        //RETRIEVING DATA FROM FIREBASE DATABASE
+
+//        messageRef.observe(FIRDataEventType.childAdded) { (snapshot: FIRDataSnapshot) in
+//            //We're trying to show the child added event will be fired twice
+//            //THe child-added event will be triggered TWICE for these two existed messages
+//            if let dict = snapshot.value as? String {
+//                print("Extracted data from Snapshot: \(dict)")
+//            }
+//        }
+        
+        //We call the observeMessages in viewDidLoad because we want to load the messages when we load the chatView
+        observeMessages()
     }
 
+    //RETRIEVING MESSAGES FROM FIREBASE BY OBSERVING DATA
+    func observeMessages() {
+        
+        //We look at the location of all messages in the database and observe events we're interested in
+        //Here we're interested in if the new message data is pushed to the database - if yes, the observing function will return an FIRDataSnapshot object
+        
+        messageRef.observe(FIRDataEventType.childAdded) { (snapshot: FIRDataSnapshot) in
+            print(snapshot.value!)
+            if let dict = snapshot.value as? [String: Any] {
+            //We need to EXTRACT the dictionary values and encode them into a JSQMessage - So first we check if there is data being retrieved
+            let mediaType = dict["MediaType"] as! String
+            let senderId = dict["senderId"] as! String
+            let senderName = dict["senderName"] as! String
+            let text = dict["text"] as! String
+            
+            //ENCODING RETRIEVED MESSAGE DATA INTO JSQMESSAGE
+                self.messages.append(JSQMessage(senderId: senderId, displayName: senderName, text: text))
+                self.collectionView.reloadData()
+                
+                //NEVER SAVE JSQ Formated messages to Firebase
+        }
+            
+            
+    }
+}
     
     
-    //SEND MESSAGE BUTTON
+    
+    //We send a message to Firebase, then retrieve the message when the user sends a message
+    
+    //SEND MESSAGE BUTTON - We'll upload messages to Firebase when message button tapped, then we'll pull each new message from Firebase, append it to the message array, then display the message to the chat view
     override func didPressSend(_ button: UIButton!, withMessageText text: String!, senderId: String!, senderDisplayName: String!, date: Date!) {
-        print("didPressSendButton")
-        print("\(text)")
-        print(senderId)
-        print(senderDisplayName)
+
+//        messages.append(JSQMessage(senderId: senderId, displayName: senderDisplayName, text: text))
+//        
+//        //Here we let the collectionView know we sent a message so it updates on the UI
+//        collectionView.reloadData()
         
+        //Our plan is to push new message data to this child location, so at this new message location,
+        let newMessage = messageRef.childByAutoId()
         
-        messages.append(JSQMessage(senderId: senderId, displayName: senderDisplayName, text: text))
+        //This is the format we want to structure our data and save it to Firebase so we pull and use it for JSQ later
+        let messageData: Dictionary<String, Any> = ["text": text, "senderId": senderId, "senderName": senderDisplayName!, "MediaType": "TEXT"]
+        //This data contains the message information sent by users such as input text, senderID, etc. It reflects how we store data in the database
+        print(messageData)
+        newMessage.setValue(messageData)
         
-        //Here we let the collectionView know we sent a message so it updates on the UI
-        collectionView.reloadData()
-        print(messages)
     }
     
     
     
     //MESSAGE TAPPED FUNCTION FOR PLAYING VIDEOS
     override func collectionView(_ collectionView: JSQMessagesCollectionView!, didTapMessageBubbleAt indexPath: IndexPath!) {
-        print("Message Bubble was tapped at Index Path: \(indexPath.item)")
         
         //Check if the message is a video or not
         let message = messages[indexPath.item]
@@ -64,7 +116,6 @@ class ChatVC: JSQMessagesViewController {
     
     //ATTACHMENT BUTTON
     override func didPressAccessoryButton(_ sender: UIButton!) {
-        print("Did press Accessory Button")
         
         let sheet = UIAlertController(title: "Media Messages", message: "Please select a media", preferredStyle: .actionSheet)
         let cancel = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
@@ -94,7 +145,6 @@ class ChatVC: JSQMessagesViewController {
     
     //VIDEO AND IMAGE LIBRARY
     func getMediaFrom(type: CFString) {
-        print("Type of Media: \(type)")
         let mediaPicker = UIImagePickerController()
     
         mediaPicker.delegate = self
@@ -127,7 +177,6 @@ class ChatVC: JSQMessagesViewController {
     
     //MESSAGE COUNT
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        print("Message Count: \(messages.count)")
         return messages.count
     }
     
