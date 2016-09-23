@@ -11,6 +11,10 @@ import JSQMessagesViewController
 import MobileCoreServices
 import AVKit
 import FirebaseDatabase
+import FirebaseStorage
+import FirebaseAuth
+
+
 
 class ChatVC: JSQMessagesViewController {
     
@@ -43,7 +47,7 @@ class ChatVC: JSQMessagesViewController {
 //        }
         
         //We call the observeMessages in viewDidLoad because we want to load the messages when we load the chatView
-        observeMessages()
+        // observeMessages()
     }
 
     //RETRIEVING MESSAGES FROM FIREBASE BY OBSERVING DATA
@@ -53,7 +57,7 @@ class ChatVC: JSQMessagesViewController {
         //Here we're interested in if the new message data is pushed to the database - if yes, the observing function will return an FIRDataSnapshot object
         
         messageRef.observe(FIRDataEventType.childAdded) { (snapshot: FIRDataSnapshot) in
-            print(snapshot.value!)
+            // print(snapshot.value!)
             if let dict = snapshot.value as? [String: Any] {
             //We need to EXTRACT the dictionary values and encode them into a JSQMessage - So first we check if there is data being retrieved
             let mediaType = dict["MediaType"] as! String
@@ -88,9 +92,8 @@ class ChatVC: JSQMessagesViewController {
         let newMessage = messageRef.childByAutoId()
         
         //This is the format we want to structure our data and save it to Firebase so we pull and use it for JSQ later
-        let messageData: Dictionary<String, Any> = ["text": text, "senderId": senderId, "senderName": senderDisplayName!, "MediaType": "TEXT"]
+        let messageData: Dictionary <String, Any> = ["text": text, "senderId": senderId, "senderName": senderDisplayName!, "MediaType": "TEXT"]
         //This data contains the message information sent by users such as input text, senderID, etc. It reflects how we store data in the database
-        print(messageData)
         newMessage.setValue(messageData)
         
     }
@@ -203,12 +206,83 @@ class ChatVC: JSQMessagesViewController {
         self.dismiss(animated: true, completion: nil)
     }
 
-  
     
+    
+    
+    //SAVING IMAGES/VIDEOS TO FIREBASE STORAGE - Also push media message data to the data base too
+    func sendMedia(picture: UIImage?, video: NSURL?) {
+        print("Pushing to Storage: \(picture)")
+        
+        //Reference to location of our Firebase Storage where we will be pushing our media files too
+        print(FIRStorage.storage().reference())
+        
+        if let picture = picture {
+            //File Path to the storage
+            let filePath = "\(FIRAuth.auth()!.currentUser!.uid)/\(NSDate.timeIntervalSinceReferenceDate)"
+            print(filePath)
+            let data = UIImageJPEGRepresentation(picture, 0.1)
+            let metadata = FIRStorageMetadata()
+            metadata.contentType = "image/jpg"
+            //FIRStorageMetaData gives extra data
+            FIRStorage.storage().reference().child(filePath).put(data!, metadata: metadata) { (metadata, error) in
+                if error != nil {
+                    print(error?.localizedDescription)
+                    return
+                }
+                
+                //Since we have one URL, the index should be 0
+                let fileUrl = metadata!.downloadURLs![0].absoluteString
+                
+                let newMessage = self.messageRef.childByAutoId()
+                
+                //This is the format we want to structure our data and save it to Firebase so we pull and use it for JSQ later
+                let messageData: Dictionary <String, Any> = ["fileUrl": fileUrl, "senderId": self.senderId, "senderName": self.senderDisplayName, "MediaType": "PHOTO"]
+                //This data contains the message information sent by users such as input text, senderID, etc. It reflects how we store data in the database
+                print(messageData)
+                newMessage.setValue(messageData)
+                
+                
+                print("Here is the Metadata: \(metadata)")
+            }
+            
+            //We can group messages by users
+            
+            
+            //ORGANIZING FOLDERS ON YOUR COMP - You name the file path
+        } else if let video = video {
+            let filePath = "\(FIRAuth.auth()!.currentUser!.uid)/\(NSDate.timeIntervalSinceReferenceDate)"
+            print(filePath)
+            let data = NSData(contentsOf: video as URL)
+            let metadata = FIRStorageMetadata()
+            metadata.contentType = "video/mp4"
+            //FIRStorageMetaData gives extra data
+            FIRStorage.storage().reference().child(filePath).put(data! as Data, metadata: metadata) { (metadata, error) in
+                if error != nil {
+                    print(error?.localizedDescription)
+                    return
+                }
+                
+                //Since we have one URL, the index should be 0
+                let fileUrl = metadata!.downloadURLs![0].absoluteString
+                
+                let newMessage = self.messageRef.childByAutoId()
+                
+                //This is the format we want to structure our data and save it to Firebase so we pull and use it for JSQ later
+                let messageData: Dictionary <String, Any> = ["fileUrl": fileUrl, "senderId": self.senderId, "senderName": self.senderDisplayName, "MediaType": "VIDEO"]
+                //This data contains the message information sent by users such as input text, senderID, etc. It reflects how we store data in the database
+                print(messageData)
+                newMessage.setValue(messageData)
+            }
+        }
+        
+    }
+        
+      
  
-
+    
 }
 
+//PHOTO AND VIDEO
 extension ChatVC: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
 func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
     print("Did finish picking")
@@ -221,9 +295,15 @@ func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMe
         
         //Then encode it into a mesage to present to the UI
         messages.append(JSQMessage(senderId: senderId, displayName: senderDisplayName, media: photo))
+        
+        //If the user picks a photo, we'll push the chosen picture to the storage because we make it clear that users can choose EITHER photo or video by the if-else statement here
+        sendMedia(picture: picture, video: nil)
     } else if let video = info[UIImagePickerControllerMediaURL] as? NSURL {
         let videoItem = JSQVideoMediaItem(fileURL: video as URL!, isReadyToPlay: true)
         messages.append(JSQMessage(senderId: senderId, displayName: senderDisplayName, media: videoItem))
+        
+        //PUSHING VIDEO TO STORAGE
+        sendMedia(picture: nil, video: video)
     }
    
     self.dismiss(animated: true, completion: nil)
