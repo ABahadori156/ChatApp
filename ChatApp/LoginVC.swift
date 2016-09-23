@@ -8,6 +8,7 @@
 
 import UIKit
 import GoogleSignIn
+import FirebaseAuth
 
 class LoginVC: UIViewController, GIDSignInUIDelegate, GIDSignInDelegate {
 
@@ -23,6 +24,21 @@ class LoginVC: UIViewController, GIDSignInUIDelegate, GIDSignInDelegate {
         GIDSignIn.sharedInstance().clientID = "1060754309612-1ujjabaf49nno1300ne2hv7gi6j0mav4.apps.googleusercontent.com"
         GIDSignIn.sharedInstance().uiDelegate = self
         GIDSignIn.sharedInstance().delegate = self
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        print(FIRAuth.auth()?.currentUser)
+        
+        //AUTHENTICATION for logging in 
+        FIRAuth.auth()?.addStateDidChangeListener({ (auth: FIRAuth, user: FIRUser?) in
+            if user != nil {
+                print(user)
+                Helper.helper.switchToNavigationViewController()
+            } else {
+                print("Unauthorized")
+            }
+        })
     }
 
     @IBAction func loginAnonDidTapped(_ sender: UIButton) {

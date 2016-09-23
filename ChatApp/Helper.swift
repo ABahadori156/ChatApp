@@ -9,15 +9,21 @@
 import UIKit
 import FirebaseAuth
 import GoogleSignIn
+import FirebaseDatabase
 
 class Helper {
     static let helper = Helper()
     
     func loginAnon() {
         //Switch view by setting navigation controller as root view controller
-        FIRAuth.auth()?.signInAnonymously(completion: { (user, error) in
+        FIRAuth.auth()?.signInAnonymously(completion: { (anonymousUser, error) in
             if error == nil {
-                print("UserId: \(user!.uid)")
+                print("UserId: \(anonymousUser!.uid)")
+                
+                let newUser = FIRDatabase.database().reference().child("users").child(anonymousUser!.uid)
+                newUser.setValue(["displayName" : "anonymous", "id" : "\(anonymousUser!.uid)", "profileUrl": ""])
+
+                
                self.switchToNavigationViewController()
             } else {
                 print("error!.localizedDescription")
@@ -37,6 +43,10 @@ class Helper {
             } else {
                 print(user?.email)
                 print(user?.displayName)
+                print(user?.photoURL)
+                
+                let newUser = FIRDatabase.database().reference().child("users").child(user!.uid)
+                newUser.setValue(["displayName" : "\(user!.displayName!)", "id" : "\(user!.uid)", "profileUrl": "\(user!.photoURL!)"])
                 
                self.switchToNavigationViewController()
 
@@ -44,7 +54,7 @@ class Helper {
         })
     }
     
-    private func switchToNavigationViewController() {
+     func switchToNavigationViewController() {
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         
         //From main storyboard instantiate a navigation controller

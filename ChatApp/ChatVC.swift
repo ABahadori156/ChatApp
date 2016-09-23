@@ -21,14 +21,28 @@ class ChatVC: JSQMessagesViewController {
     //An Array that contains all the messages in the chat group
     var messages = [JSQMessage]()
 
+    var avatarDict = [String: JSQMessagesAvatarImage]()
+    
     //Storage in Firebase for all our messages - In this child location, we'll store all messages sent by all users in the app
     let messageRef = FIRDatabase.database().reference().child("messages")
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.senderId = "1"
-        self.senderDisplayName = "xsagakenx"
+        
+        //DIFFERENTIATING MESSAGES BETWEEN CURRENTUSER AND ELSE - So currentUser's message bubble is on the right, and other is on the left
+        let currentUser = FIRAuth.auth()?.currentUser
+        
+        if currentUser?.isAnonymous == true {
+             self.senderDisplayName = "Anonymous"
+        } else {
+            self.senderDisplayName = "\(currentUser?.displayName!)"
+        }
+        
+        self.senderId = currentUser!.uid
+        
+        // observeUsers()
+        observeMessages()
         
    
         //UPLOAD DATA TO FIREBASE DATABASE
@@ -47,9 +61,37 @@ class ChatVC: JSQMessagesViewController {
 //        }
         
         //We call the observeMessages in viewDidLoad because we want to load the messages when we load the chatView
-        // observeMessages()
+        
     }
 
+    func observeUsers(id: String) {
+        FIRDatabase.database().reference().child("users").child(id).observe(.value) { (snapshot: FIRDataSnapshot) in
+            print(snapshot.value)
+            if let dict = snapshot.value as? [String: Any] {
+                print(dict)
+                let avatarUrl = dict["profileUrl"] as! String
+                self.setupAvatar(url: avatarUrl, messageId: id)
+            }
+            
+            
+        }
+    }
+    
+    func setupAvatar(url: String, messageId: String) {
+        if url != "" {
+            let fileUrl = NSURL(string: url)
+            let data = NSData(contentsOf: fileUrl! as URL)
+            let image = UIImage(data: data! as Data)
+            let userImg = JSQMessagesAvatarImageFactory.avatarImage(with: image, diameter: 30)
+            avatarDict[messageId] = userImg
+        } else {
+            avatarDict[messageId] =  JSQMessagesAvatarImageFactory.avatarImage(with: UIImage(named: "profileImage"), diameter: 30)
+        }
+        collectionView.reloadData()
+    }
+    
+    
+    
     //RETRIEVING MESSAGES FROM FIREBASE BY OBSERVING DATA
     func observeMessages() {
         
@@ -63,16 +105,49 @@ class ChatVC: JSQMessagesViewController {
             let mediaType = dict["MediaType"] as! String
             let senderId = dict["senderId"] as! String
             let senderName = dict["senderName"] as! String
-            let text = dict["text"] as! String
-            
-            //ENCODING RETRIEVED MESSAGE DATA INTO JSQMESSAGE
-                self.messages.append(JSQMessage(senderId: senderId, displayName: senderName, text: text))
+                
+                self.observeUsers(id: senderId)
+                
+                switch mediaType {
+                    case "TEXT":
+                    //ENCODING RETRIEVED MESSAGE DATA INTO JSQMESSAGE
+                    let text = dict["text"] as! String
+                    self.messages.append(JSQMessage(senderId: senderId, displayName: senderName, text: text))
+                    
+                    case "PHOTO":
+                        let fileUrl = dict["fileUrl"] as! String
+                        let url = NSURL(string: fileUrl)
+                        let data = NSData(contentsOf: url! as URL)
+                        let picture = UIImage(data: data! as Data)
+                        let photo = JSQPhotoMediaItem(image: picture)
+                        self.messages.append(JSQMessage(senderId: senderId, displayName: senderName, media: photo))
+                    
+                        if self.senderId == senderId {
+                              photo?.appliesMediaViewMaskAsOutgoing = true
+                        } else {
+                            photo?.appliesMediaViewMaskAsOutgoing = true
+                    }
+                    
+                    
+                    case "VIDEO":
+                        let fileUrl = dict["fileUrl"] as! String
+                        let video = NSURL(string: fileUrl)
+                        let videoItem = JSQVideoMediaItem(fileURL: video as URL!, isReadyToPlay: true)
+                        self.messages.append(JSQMessage(senderId: senderId, displayName: senderName, media: videoItem))
+                        if self.senderId == senderId {
+                            videoItem?.appliesMediaViewMaskAsOutgoing = true
+                        } else {
+                            videoItem?.appliesMediaViewMaskAsOutgoing = true
+                            }
+                default:
+                    print("unknown data type")
+                }
+                
+                
                 self.collectionView.reloadData()
                 
                 //NEVER SAVE JSQ Formated messages to Firebase
         }
-            
-            
     }
 }
     
@@ -96,6 +171,8 @@ class ChatVC: JSQMessagesViewController {
         //This data contains the message information sent by users such as input text, senderID, etc. It reflects how we store data in the database
         newMessage.setValue(messageData)
         
+        //Clears textfield after sending a message
+        self.finishSendingMessage()
     }
     
     
@@ -165,7 +242,11 @@ class ChatVC: JSQMessagesViewController {
     
     //AVATAR IMAGE CONFIG
     override func collectionView(_ collectionView: JSQMessagesCollectionView!, avatarImageDataForItemAt indexPath: IndexPath!) -> JSQMessageAvatarImageDataSource! {
-        return nil
+        let message = messages[indexPath.item]
+        
+        //The avatar image should depend on the user type, so we get the avatar from the avatar dictionary we created
+        return avatarDict[message.senderId]
+       
     }
     
     
@@ -173,9 +254,20 @@ class ChatVC: JSQMessagesViewController {
     //This displays a message bubble to display a message.
     //BUBBLE DISPLAY FOR MESSAGES
     override func collectionView(_ collectionView: JSQMessagesCollectionView!, messageBubbleImageDataForItemAt indexPath: IndexPath!) -> JSQMessageBubbleImageDataSource! {
-        //We instantiate the bubble display first. This factory provides tools to create a JSQMessages bubble display object in the collectionView cells
-        let bubbleFactory = JSQMessagesBubbleImageFactory()
-        return bubbleFactory?.outgoingMessagesBubbleImage(with: UIColor.black)
+        let message = messages[indexPath.item]
+        
+        if message.senderId == self.senderId {
+            //We instantiate the bubble display first. This factory provides tools to create a JSQMessages bubble display object in the collectionView cells
+            let bubbleFactory = JSQMessagesBubbleImageFactory()
+            return bubbleFactory?.outgoingMessagesBubbleImage(with: UIColor.black)
+            
+        } else {
+            //We instantiate the bubble display first. This factory provides tools to create a JSQMessages bubble display object in the collectionView cells
+            let bubbleFactory = JSQMessagesBubbleImageFactory()
+            return bubbleFactory?.incomingMessagesBubbleImage(with: UIColor.blue)
+        }
+        
+       
     }
     
     //MESSAGE COUNT
@@ -193,6 +285,16 @@ class ChatVC: JSQMessagesViewController {
     
     
     @IBAction func logoutDidTapped(_ sender: UIBarButtonItem) {
+        print("User Auth Status: \(FIRAuth.auth()?.currentUser)")
+        
+        do {
+            try FIRAuth.auth()?.signOut()
+        } catch let error {
+            print(error)
+        }
+        
+        print(FIRAuth.auth()?.currentUser)
+        
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         
         //From main storyboard instantiate a view controller
@@ -291,17 +393,11 @@ func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMe
     
     //This is the picture we chose from our photo library
     if let picture = info[UIImagePickerControllerOriginalImage] as? UIImage {
-        let photo = JSQPhotoMediaItem(image: picture)
-        
-        //Then encode it into a mesage to present to the UI
-        messages.append(JSQMessage(senderId: senderId, displayName: senderDisplayName, media: photo))
         
         //If the user picks a photo, we'll push the chosen picture to the storage because we make it clear that users can choose EITHER photo or video by the if-else statement here
         sendMedia(picture: picture, video: nil)
     } else if let video = info[UIImagePickerControllerMediaURL] as? NSURL {
-        let videoItem = JSQVideoMediaItem(fileURL: video as URL!, isReadyToPlay: true)
-        messages.append(JSQMessage(senderId: senderId, displayName: senderDisplayName, media: videoItem))
-        
+
         //PUSHING VIDEO TO STORAGE
         sendMedia(picture: nil, video: video)
     }
